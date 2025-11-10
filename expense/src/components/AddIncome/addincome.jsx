@@ -1,9 +1,9 @@
 import React from "react";
-
+import { Sidebar } from "../Sidebar/Sidebar";
 export const AddIncome = () => {
   return (
     <div>
-      <h1>Add Income Page</h1>
+      <Sidebar />
     </div>
   );
 };

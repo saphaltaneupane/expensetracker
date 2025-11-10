@@ -18,7 +18,7 @@ function App() {
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/addincome" element={<AddIncome />} />
         <Route path="/addexpense" element={<AddExpense />} />
-        <Route path="/report" element={<report />} />
+        <Route path="/report" element={<Report />} />
       </Routes>
     </Router>
   );

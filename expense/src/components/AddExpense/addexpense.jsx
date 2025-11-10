@@ -1,5 +1,9 @@
 import React from "react";
-
+import { Sidebar } from "../Sidebar/Sidebar";
 export const AddExpense = () => {
-  return <div>addexpense</div>;
+  return (
+    <div>
+      <Sidebar />
+    </div>
+  );
 };
