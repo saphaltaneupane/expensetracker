@@ -24,41 +24,52 @@ export const Sidebar = () => {
     }
   };
   return (
-    <div className="text-white bg-gray-900 min-h-screen flex">
-      <div className="w-64 bg-gray-800 flex flex-col justify-between">
-        <div>
-          <h2 className="text-2xl font-bold text-center py-6 border-b border-gray-700">
-            <span className="text-emerald-500">Expense</span>
-            <span className="text-white">Ease</span>
-          </h2>
-          {/* Sidebar Links */}
-          <nav className="flex flex-col gap-4 p-6">
-            <Link to="/dashboard" className="hover:text-emerald-400 transition">
-              Dashboard
-            </Link>
-            <Link to="/addincome" className="hover:text-emerald-400 transition">
-              Add Income
-            </Link>
-            <Link
-              to="/addexpense"
-              className="hover:text-emerald-400 transition"
-            >
-              Add Expenses
-            </Link>
-            <Link to="/report" className="hover:text-emerald-400 transition">
-              Report
-            </Link>
-          </nav>
-        </div>
-        <button
-          onClick={handleLogout}
-          className="m-6 py-2 px-4 bg-emerald-500 hover:bg-emerald-600 rounded text-white font-semibold"
-        >
-          Logout
-        </button>
+    <div className="w-64 bg-gray-800 border-r border-gray-700 fixed h-full flex flex-col justify-between shadow-sm">
+      <div>
+        <h2 className="text-2xl font-bold text-center py-6 border-b border-gray-700">
+          <span className="text-emerald-500">Expense</span>
+          <span className="text-white">Ease</span>
+        </h2>
+        {/* Sidebar Links */}
+        <nav className="flex flex-col gap-4 p-6">
+          <Link
+            to="/dashboard"
+            className="text-white hover:text-emerald-500 transition font-medium"
+          >
+            Dashboard
+          </Link>
+          <Link
+            to="/addincome"
+            className="text-white hover:text-emerald-500 transition font-medium"
+          >
+            Add Income
+          </Link>
+          <Link
+            to="/addexpense"
+            className="text-white hover:text-emerald-500 transition font-medium"
+          >
+            Add Expenses
+          </Link>
+          <Link
+            to="/category"
+            className="text-white hover:text-emerald-500 transition font-medium"
+          >
+            Add Category
+          </Link>
+          <Link
+            to="/report"
+            className="text-white hover:text-emerald-500 transition font-medium"
+          >
+            Report
+          </Link>
+        </nav>
       </div>
-
-      <div className="flex-1 p-8"></div>
+      <button
+        onClick={handleLogout}
+        className="m-6 py-2 px-4 bg-emerald-500 hover:bg-emerald-600 rounded text-white font-semibold transition"
+      >
+        Logout
+      </button>
     </div>
   );
 };
