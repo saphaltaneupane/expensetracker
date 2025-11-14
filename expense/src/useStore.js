@@ -1,88 +1,155 @@
-// useStore.js
 import { create } from "zustand";
+import { persist, createJSONStorage } from "zustand/middleware";
 import { db } from "./firebase";
-import {
-  doc,
-  getDoc,
-  updateDoc,
-  collection,
-  addDoc,
-  serverTimestamp,
-  arrayUnion,
-  setDoc,
-} from "firebase/firestore";
+import { doc, getDoc, setDoc, updateDoc, arrayUnion } from "firebase/firestore";
 
-export const useStore = create((set) => ({
-  income: 0,
-  categories: [],
-  loading: false,
+const useStore = create(
+  persist(
+    (set, get) => ({
+      currentUserId: null,
+      income: null,
+      categories: [],
+      loading: false,
+      error: null,
 
-  fetchUserData: async (userId) => {
-    set({ loading: true });
-    try {
-      const userRef = doc(db, "users", userId);
-      const userSnap = await getDoc(userRef);
-      if (userSnap.exists()) {
-        const data = userSnap.data();
+      setCurrentUserId: (uid) => set({ currentUserId: uid }),
+
+      // ✅ Fetch user data - ALWAYS fetch from Firebase when userId changes
+      fetchUserData: async (userId) => {
+        if (!userId) return;
+
+        set({ loading: true, error: null });
+        try {
+          const ref = doc(db, "users", userId);
+          const snap = await getDoc(ref);
+
+          if (snap.exists()) {
+            const data = snap.data();
+            set({
+              income: data.income ?? null,
+              categories: data.categories || [],
+            });
+          } else {
+            await setDoc(ref, { income: null, categories: [] });
+            set({ income: null, categories: [] });
+          }
+        } catch (error) {
+          console.error("Error fetching user data:", error);
+          set({ error: error.message });
+        } finally {
+          set({ loading: false });
+        }
+      },
+
+      // ✅ Save income
+      setIncome: async (userId, newIncome) => {
+        if (!userId) return;
+        set({ error: null });
+        try {
+          const ref = doc(db, "users", userId);
+          await setDoc(ref, { income: newIncome }, { merge: true });
+          set({ income: newIncome });
+        } catch (error) {
+          console.error("Error setting income:", error);
+          set({ error: error.message });
+        }
+      },
+
+      // ✅ Add category
+      addCategory: async (userId, newCategory) => {
+        if (!userId || !newCategory) return;
+        set({ error: null });
+        try {
+          const userRef = doc(db, "users", userId);
+          await updateDoc(userRef, {
+            categories: arrayUnion(newCategory),
+          });
+
+          set((state) => ({
+            categories: state.categories.includes(newCategory)
+              ? state.categories
+              : [...state.categories, newCategory],
+          }));
+        } catch (err) {
+          console.error("Error updating category, trying to create document:", err);
+          try {
+            const userRef = doc(db, "users", userId);
+            await setDoc(
+              userRef,
+              { income: get().income || null, categories: [newCategory] },
+              { merge: true }
+            );
+
+            set((state) => ({
+              categories: state.categories.includes(newCategory)
+                ? state.categories
+                : [...state.categories, newCategory],
+            }));
+          } catch (error) {
+            console.error("Error adding category:", error);
+            set({ error: error.message });
+          }
+        }
+      },
+
+      // ✅ Add expense
+      addExpense: async (userId, expense) => {
+        if (!userId || !expense) return;
+        set({ error: null });
+        try {
+          const userRef = doc(db, "users", userId);
+          await updateDoc(userRef, {
+            expenses: arrayUnion(expense),
+          });
+        } catch (err) {
+          console.error("Error adding expense:", err);
+          try {
+            const userRef = doc(db, "users", userId);
+            await setDoc(
+              userRef,
+              { expenses: [expense] },
+              { merge: true }
+            );
+          } catch (error) {
+            console.error("Error adding expense:", error);
+            set({ error: error.message });
+          }
+        }
+      },
+
+      // ✅ Clear error
+      clearError: () => set({ error: null }),
+
+      // ✅ Logout - clears state AND removes localStorage entries
+      logout: () => {
+        const currentUserId = get().currentUserId;
+        
+        // Clear state
         set({
-          income: data.income ?? 0,
-          categories: data.categories ?? [],
+          currentUserId: null,
+          income: null,
+          categories: [],
           loading: false,
+          error: null,
         });
-      } else {
-        // If user doc doesn't exist yet, create a minimal doc
-        await setDoc(userRef, { income: 0, categories: [] });
-        set({ income: 0, categories: [], loading: false });
-      }
-    } catch (err) {
-      console.error("Error fetching user:", err);
-      set({ loading: false });
+
+        // Clear ALL localStorage entries
+        if (currentUserId) {
+          localStorage.removeItem(`expenseease-store-${currentUserId}`);
+        }
+        localStorage.removeItem("expenseease-store");
+        localStorage.removeItem("expenseease-user");
+      },
+    }),
+    {
+      name: "expenseease-store",
+      storage: createJSONStorage(() => localStorage),
+      partialize: (state) => ({
+        currentUserId: state.currentUserId,
+        // Don't persist income and categories - always fetch from Firebase
+      }),
     }
-  },
-
-  setIncome: async (userId, newIncome) => {
-    set({ income: newIncome });
-    const userRef = doc(db, "users", userId);
-    await updateDoc(userRef, { income: newIncome });
-  },
-
-  // safe addCategory using arrayUnion and then update local state
-  addCategory: async (userId, newCategory) => {
-    try {
-      const userRef = doc(db, "users", userId);
-      // update Firestore safely (arrayUnion avoids racing issues)
-      await updateDoc(userRef, { categories: arrayUnion(newCategory) });
-      // Update local state so components re-render instantly
-      set((state) => ({
-        categories: state.categories.includes(newCategory)
-          ? state.categories
-          : [...state.categories, newCategory],
-      }));
-    } catch (err) {
-      // If updateDoc fails because doc doesn't exist, create it
-      console.warn("addCategory updateDoc failed, creating doc...", err);
-      const userRef = doc(db, "users", userId);
-      await setDoc(userRef, { income: 0, categories: [newCategory] }, { merge: true });
-      set((state) => ({
-        categories: state.categories.includes(newCategory)
-          ? state.categories
-          : [...state.categories, newCategory],
-      }));
-    }
-  },
-
-  addExpense: async (userId, expense) => {
-    const userRef = doc(db, "users", userId);
-    const expensesRef = collection(userRef, "expenses");
-
-    await addDoc(expensesRef, {
-      name: expense.name,
-      amount: Number(expense.amount),
-      category: expense.category,
-      date: new Date().toISOString(),
-      createdAt: serverTimestamp(),
-    });
-  },
-}));
+  )
+);
 
 export default useStore;

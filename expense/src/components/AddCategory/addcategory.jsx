@@ -5,15 +5,14 @@ import * as Yup from "yup";
 import useStore from "../../useStore";
 
 export const Addcategory = () => {
-  const { categories, addCategory, fetchUserData } = useStore();
-  const userId = "testuser";
+  const { categories, addCategory, fetchUserData, currentUserId } = useStore();
 
-  // ✅ Fetch user data when component loads
   useEffect(() => {
-    fetchUserData(userId);
-  }, [fetchUserData, userId]);
+    if (currentUserId) {
+      fetchUserData(currentUserId);
+    }
+  }, [fetchUserData, currentUserId]);
 
-  // ✅ Setup Formik form
   const formik = useFormik({
     initialValues: {
       categoryName: "",
@@ -25,8 +24,13 @@ export const Addcategory = () => {
         .max(50, "Category name must be less than 50 characters"),
     }),
     onSubmit: async (values, { resetForm }) => {
+      if (!currentUserId) {
+        alert("No user logged in!");
+        return;
+      }
+
       try {
-        await addCategory(userId, values.categoryName.trim());
+        await addCategory(currentUserId, values.categoryName.trim());
         alert("Category added!");
         resetForm();
       } catch (err) {
@@ -37,54 +41,70 @@ export const Addcategory = () => {
   });
 
   return (
-    <div className="flex min-h-screen bg-white">
+    <div className="flex min-h-screen bg-gray-100">
       <Sidebar />
-      <div className="flex-1 p-8 ml-64">
-        <h1 className="text-gray-800 text-3xl font-bold mb-6">Add Category</h1>
 
-        {/* 🧾 Form Section */}
-        <form className="max-w-md mb-8" onSubmit={formik.handleSubmit}>
-          <input
-            type="text"
-            placeholder="Category Name"
-            value={formik.values.categoryName}
-            onChange={formik.handleChange}
-            onBlur={formik.handleBlur}
-            name="categoryName"
-            className="block mb-4 w-full p-3 rounded bg-white text-gray-800 border-2 border-gray-300 focus:border-blue-500 focus:outline-none"
-          />
-          {formik.touched.categoryName && formik.errors.categoryName && (
-            <p className="text-red-500 text-sm mb-2">
-              {formik.errors.categoryName}
-            </p>
-          )}
-          <button
-            type="submit"
-            className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-3 rounded transition"
-          >
+      {/* Centered content */}
+      <div className="flex-1 ml-64 flex items-start justify-center pt-24">
+        <div className="bg-white p-8 rounded-xl shadow-lg w-full max-w-md">
+          <h1 className="text-gray-800 text-3xl font-bold mb-6 text-center">
             Add Category
-          </button>
-        </form>
+          </h1>
 
-        {/* 📋 Display Categories Section */}
-        <div>
-          <h2 className="text-xl font-semibold text-gray-800 mb-3">
-            Your Categories:
-          </h2>
+          {/* Category Form */}
+          <form onSubmit={formik.handleSubmit}>
+            <input
+              type="text"
+              placeholder="Category Name"
+              value={formik.values.categoryName}
+              onChange={formik.handleChange}
+              onBlur={formik.handleBlur}
+              name="categoryName"
+              className={`block mb-2 w-full p-3 rounded bg-white text-gray-800 border-2 ${
+                formik.touched.categoryName && formik.errors.categoryName
+                  ? "border-red-500"
+                  : "border-gray-300"
+              } focus:border-blue-500 focus:outline-none`}
+            />
+            {formik.touched.categoryName && formik.errors.categoryName && (
+              <p className="text-red-500 text-sm mb-4">
+                {formik.errors.categoryName}
+              </p>
+            )}
 
-          {categories.length === 0 ? (
-            <p className="text-gray-500">No categories yet. Add one above.</p>
-          ) : (
-            <ul className="space-y-1">
-              {categories.map((cat, index) => (
-                <li key={index} className="text-gray-700">
-                  {index + 1}. {cat}
-                </li>
-              ))}
-            </ul>
-          )}
+            <button
+              type="submit"
+              className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-3 rounded transition w-full"
+            >
+              Add Category
+            </button>
+          </form>
+
+          {/* Display Categories */}
+          <div className="mt-6 text-center">
+            <h2 className="text-gray-800 text-xl font-semibold mb-3">
+              Your Categories
+            </h2>
+
+            {categories.length === 0 ? (
+              <p className="text-gray-500">No categories yet. Add one above.</p>
+            ) : (
+              <ul className="text-gray-700 space-y-2 text-left">
+                {categories.map((cat, index) => (
+                  <li
+                    key={index}
+                    className="border-b border-gray-200 pb-2 last:border-none"
+                  >
+                    {index + 1}. {cat}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
         </div>
       </div>
     </div>
   );
 };
+
+export default Addcategory;

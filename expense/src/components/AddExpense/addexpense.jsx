@@ -1,13 +1,17 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { Sidebar } from "../Sidebar/Sidebar";
-import { useEffect } from "react";
 import useStore from "../../useStore";
 import { useFormik } from "formik";
 import * as Yup from "yup";
 
 export const AddExpense = () => {
-  const { categories, fetchUserData, addExpense } = useStore();
-  const userId = "testuser";
+  const { categories, fetchUserData, addExpense, currentUserId } = useStore();
+
+  useEffect(() => {
+    if (currentUserId) {
+      fetchUserData(currentUserId);
+    }
+  }, [fetchUserData, currentUserId]);
 
   const formik = useFormik({
     initialValues: {
@@ -24,13 +28,18 @@ export const AddExpense = () => {
       selectedCategory: Yup.string().required("Category is required"),
     }),
     onSubmit: async (values, { resetForm }) => {
+      if (!currentUserId) {
+        alert("No user logged in!");
+        return;
+      }
+
       try {
-        await addExpense(userId, {
+        await addExpense(currentUserId, {
           name: values.expenseName,
           amount: Number(values.amount),
           category: values.selectedCategory,
+          date: new Date().toISOString(),
         });
-        console.log("Expense added successfully!");
         alert("Expense added successfully!");
         resetForm();
       } catch (error) {
@@ -38,88 +47,96 @@ export const AddExpense = () => {
         alert("Failed to add expense. Please try again.");
       }
     },
-    validateOnBlur: true,
-    validateOnChange: true,
   });
 
-  useEffect(() => {
-    fetchUserData(userId);
-  }, []);
-
   return (
-    <div className="flex min-h-screen bg-white">
+    <div className="flex min-h-screen bg-gray-100">
       <Sidebar />
-      <div className="flex-1 p-8 ml-64">
-        <h1 className="text-gray-800 text-3xl font-bold mb-6">Add Expenses</h1>
-        <form onSubmit={formik.handleSubmit}>
-          <input
-            type="text"
-            name="expenseName"
-            placeholder="Expense Title"
-            value={formik.values.expenseName}
-            onChange={formik.handleChange}
-            onBlur={formik.handleBlur}
-            className={`block mb-2 w-full p-3 rounded bg-white text-gray-800 border-2 ${
-              formik.touched.expenseName && formik.errors.expenseName
-                ? "border-red-500"
-                : "border-gray-300"
-            } focus:border-blue-500 focus:outline-none`}
-          />
-          {formik.touched.expenseName && formik.errors.expenseName && (
-            <p className="text-red-500 text-sm mb-4">
-              {formik.errors.expenseName}
-            </p>
-          )}
 
-          <input
-            type="number"
-            name="amount"
-            placeholder="Amount"
-            value={formik.values.amount}
-            onChange={formik.handleChange}
-            onBlur={formik.handleBlur}
-            className={`block mb-2 w-full p-3 rounded bg-white text-gray-800 border-2 ${
-              formik.touched.amount && formik.errors.amount
-                ? "border-red-500"
-                : "border-gray-300"
-            } focus:border-blue-500 focus:outline-none`}
-          />
-          {formik.touched.amount && formik.errors.amount && (
-            <p className="text-red-500 text-sm mb-4">{formik.errors.amount}</p>
-          )}
+      {/* Center content, slightly upward */}
+      <div className="flex-1 ml-64 flex items-start justify-center pt-24">
+        <div className="bg-white p-8 rounded-xl shadow-lg w-full max-w-md">
+          <h1 className="text-gray-800 text-3xl font-bold mb-6 text-center">
+            Add Expense
+          </h1>
 
-          <select
-            name="selectedCategory"
-            value={formik.values.selectedCategory}
-            onChange={formik.handleChange}
-            onBlur={formik.handleBlur}
-            className={`block mb-2 w-full p-3 rounded bg-white text-gray-800 border-2 ${
-              formik.touched.selectedCategory && formik.errors.selectedCategory
-                ? "border-red-500"
-                : "border-gray-300"
-            } focus:border-blue-500 focus:outline-none`}
-          >
-            <option value="">Select Category</option>
-            {categories.map((cat, index) => (
-              <option key={index} value={cat}>
-                {cat}
-              </option>
-            ))}
-          </select>
-          {formik.touched.selectedCategory &&
-            formik.errors.selectedCategory && (
+          <form onSubmit={formik.handleSubmit}>
+            {/* Expense name */}
+            <input
+              type="text"
+              name="expenseName"
+              placeholder="Expense Title"
+              value={formik.values.expenseName}
+              onChange={formik.handleChange}
+              onBlur={formik.handleBlur}
+              className={`block mb-2 w-full p-3 rounded bg-white text-gray-800 border-2 ${
+                formik.touched.expenseName && formik.errors.expenseName
+                  ? "border-red-500"
+                  : "border-gray-300"
+              } focus:border-blue-500 focus:outline-none`}
+            />
+            {formik.touched.expenseName && formik.errors.expenseName && (
               <p className="text-red-500 text-sm mb-4">
-                {formik.errors.selectedCategory}
+                {formik.errors.expenseName}
               </p>
             )}
 
-          <button
-            type="submit"
-            className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-3 rounded transition"
-          >
-            Add Expense
-          </button>
-        </form>
+            {/* Amount */}
+            <input
+              type="number"
+              name="amount"
+              placeholder="Amount"
+              value={formik.values.amount}
+              onChange={formik.handleChange}
+              onBlur={formik.handleBlur}
+              className={`block mb-2 w-full p-3 rounded bg-white text-gray-800 border-2 ${
+                formik.touched.amount && formik.errors.amount
+                  ? "border-red-500"
+                  : "border-gray-300"
+              } focus:border-blue-500 focus:outline-none`}
+            />
+            {formik.touched.amount && formik.errors.amount && (
+              <p className="text-red-500 text-sm mb-4">
+                {formik.errors.amount}
+              </p>
+            )}
+
+            {/* Category dropdown */}
+            <select
+              name="selectedCategory"
+              value={formik.values.selectedCategory}
+              onChange={formik.handleChange}
+              onBlur={formik.handleBlur}
+              className={`block mb-2 w-full p-3 rounded bg-white text-gray-800 border-2 ${
+                formik.touched.selectedCategory &&
+                formik.errors.selectedCategory
+                  ? "border-red-500"
+                  : "border-gray-300"
+              } focus:border-blue-500 focus:outline-none`}
+            >
+              <option value="">Select Category</option>
+              {categories.map((cat, index) => (
+                <option key={index} value={cat}>
+                  {cat}
+                </option>
+              ))}
+            </select>
+            {formik.touched.selectedCategory &&
+              formik.errors.selectedCategory && (
+                <p className="text-red-500 text-sm mb-4">
+                  {formik.errors.selectedCategory}
+                </p>
+              )}
+
+            {/* Button */}
+            <button
+              type="submit"
+              className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-3 rounded transition w-full"
+            >
+              Add Expense
+            </button>
+          </form>
+        </div>
       </div>
     </div>
   );
