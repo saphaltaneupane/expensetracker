@@ -9,12 +9,15 @@ const useStore = create(
       currentUserId: null,
       income: null,
       categories: [],
+      expenses: [],
       loading: false,
       error: null,
+      resetForAddExpenseUI: false,
+      resetDate: null,
 
       setCurrentUserId: (uid) => set({ currentUserId: uid }),
 
-      // ✅ Fetch user data - ALWAYS fetch from Firebase when userId changes
+      // Fetch user data - ALWAYS fetch from Firebase when userId changes
       fetchUserData: async (userId) => {
         if (!userId) return;
 
@@ -28,10 +31,25 @@ const useStore = create(
             set({
               income: data.income ?? null,
               categories: data.categories || [],
+              expenses: data.expenses || [],
+              resetForAddExpenseUI: data.resetForAddExpenseUI || false,
+              resetDate: data.resetDate || null,
             });
           } else {
-            await setDoc(ref, { income: null, categories: [] });
-            set({ income: null, categories: [] });
+            await setDoc(ref, { 
+              income: null, 
+              categories: [], 
+              expenses: [],
+              resetForAddExpenseUI: false,
+              resetDate: null,
+            });
+            set({ 
+              income: null, 
+              categories: [], 
+              expenses: [],
+              resetForAddExpenseUI: false,
+              resetDate: null,
+            });
           }
         } catch (error) {
           console.error("Error fetching user data:", error);
@@ -41,16 +59,78 @@ const useStore = create(
         }
       },
 
-      // ✅ Save income
+      // Save income (keeps original amount intact)
       setIncome: async (userId, newIncome) => {
         if (!userId) return;
         set({ error: null });
         try {
           const ref = doc(db, "users", userId);
-          await setDoc(ref, { income: newIncome }, { merge: true });
-          set({ income: newIncome });
+          // Clear the reset flags when new income is added
+          await setDoc(ref, { 
+            income: newIncome,
+            resetForAddExpenseUI: false,
+            resetDate: null,
+          }, { merge: true });
+          set({ 
+            income: newIncome,
+            resetForAddExpenseUI: false,
+            resetDate: null,
+          });
         } catch (error) {
           console.error("Error setting income:", error);
+          set({ error: error.message });
+        }
+      },
+
+      // ✅ Reset income only, keep expenses and flag UI to hide totals
+      resetIncome: async (userId) => {
+        if (!userId) return;
+
+        try {
+          const ref = doc(db, "users", userId);
+          const resetTimestamp = new Date().toISOString();
+
+          // Reset income and set flags in Firebase
+          await setDoc(ref, { 
+            income: null,
+            resetForAddExpenseUI: true,
+            resetDate: resetTimestamp,
+          }, { merge: true });
+
+          set({
+            income: null,
+            expenses: get().expenses,  // keep all old expenses for REPORT
+            resetForAddExpenseUI: true,
+            resetDate: resetTimestamp,
+          });
+        } catch (error) {
+          console.error("Error resetting income:", error);
+          set({ error: error.message });
+        }
+      },
+
+      // Clears the UI reset flag so AddExpense behaves normally after income is added
+      clearExpenseUIReset: async (userId) => {
+        if (!userId) return;
+
+        try {
+          const resetTimestamp = new Date().toISOString();
+          const ref = doc(db, "users", userId);
+
+          // Update Firebase
+          await setDoc(
+            ref,
+            { resetDate: resetTimestamp, resetForAddExpenseUI: false },
+            { merge: true }
+          );
+
+          // Update local Zustand store
+          set({
+            resetDate: resetTimestamp,
+            resetForAddExpenseUI: false,
+          });
+        } catch (error) {
+          console.error("Error clearing AddExpense UI reset:", error);
           set({ error: error.message });
         }
       },
@@ -65,11 +145,13 @@ const useStore = create(
             categories: arrayUnion(newCategory),
           });
 
-          set((state) => ({
-            categories: state.categories.includes(newCategory)
-              ? state.categories
-              : [...state.categories, newCategory],
-          }));
+          // Update local state
+          const currentCategories = get().categories || [];
+          if (!currentCategories.includes(newCategory)) {
+            set({
+              categories: [...currentCategories, newCategory],
+            });
+          }
         } catch (err) {
           console.error("Error updating category, trying to create document:", err);
           try {
@@ -80,11 +162,13 @@ const useStore = create(
               { merge: true }
             );
 
-            set((state) => ({
-              categories: state.categories.includes(newCategory)
-                ? state.categories
-                : [...state.categories, newCategory],
-            }));
+            // Update local state
+            const currentCategories = get().categories || [];
+            if (!currentCategories.includes(newCategory)) {
+              set({
+                categories: [...currentCategories, newCategory],
+              });
+            }
           } catch (error) {
             console.error("Error adding category:", error);
             set({ error: error.message });
@@ -92,24 +176,41 @@ const useStore = create(
         }
       },
 
-      // ✅ Add expense
+      //  Add expense (NO LONGER reduces income amount - just adds to expenses array)
       addExpense: async (userId, expense) => {
         if (!userId || !expense) return;
         set({ error: null });
+
         try {
           const userRef = doc(db, "users", userId);
+
+          // Just add expense to array, DON'T modify income
           await updateDoc(userRef, {
             expenses: arrayUnion(expense),
           });
+
+          // Update local state
+          const currentExpenses = get().expenses || [];
+          set({
+            expenses: [...currentExpenses, expense],
+          });
         } catch (err) {
           console.error("Error adding expense:", err);
+
           try {
             const userRef = doc(db, "users", userId);
             await setDoc(
               userRef,
-              { expenses: [expense] },
+              {
+                expenses: [expense],
+              },
               { merge: true }
             );
+
+            // Update local state
+            set({
+              expenses: [expense],
+            });
           } catch (error) {
             console.error("Error adding expense:", error);
             set({ error: error.message });
@@ -117,10 +218,10 @@ const useStore = create(
         }
       },
 
-      // ✅ Clear error
+      //  Clear error
       clearError: () => set({ error: null }),
 
-      // ✅ Logout - clears state AND removes localStorage entries
+      // Logout - clears state AND removes localStorage entries
       logout: () => {
         const currentUserId = get().currentUserId;
         
@@ -129,8 +230,11 @@ const useStore = create(
           currentUserId: null,
           income: null,
           categories: [],
+          expenses: [],
           loading: false,
           error: null,
+          resetForAddExpenseUI: false,
+          resetDate: null,
         });
 
         // Clear ALL localStorage entries

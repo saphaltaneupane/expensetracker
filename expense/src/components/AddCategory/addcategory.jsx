@@ -74,7 +74,7 @@ export const Addcategory = () => {
 
             <button
               type="submit"
-              className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-3 rounded transition w-full"
+              className="bg-emerald-500 hover:bg-emerald-600 text-white px-6 py-3 rounded transition w-full"
             >
               Add Category
             </button>

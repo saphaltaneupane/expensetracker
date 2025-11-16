@@ -5,9 +5,10 @@ import { useFormik } from "formik";
 import * as Yup from "yup";
 
 export const AddIncome = () => {
-  const { income, setIncome, currentUserId, fetchUserData } = useStore();
+  const { income, setIncome, resetIncome, currentUserId, fetchUserData } =
+    useStore();
 
-  // ✅ fetch income automatically if logged in (no reloads)
+  // Fetch income automatically if logged in (no reloads)
   useEffect(() => {
     if (currentUserId) {
       fetchUserData(currentUserId); // this gets the user data from firebase
@@ -32,7 +33,10 @@ export const AddIncome = () => {
         ),
     }),
     onSubmit: async (values, { resetForm }) => {
-      if (!currentUserId) return alert("No user logged in!");
+      if (!currentUserId) {
+        alert("No user logged in!");
+        return;
+      }
 
       const receivedDate = new Date(values.incomeDate);
       const nextSalary = new Date(receivedDate);
@@ -44,16 +48,35 @@ export const AddIncome = () => {
         nextSalaryDate: nextSalary.toISOString().split("T")[0],
       });
 
+      // ✅ The setIncome function now handles clearing reset flags automatically
       resetForm();
-      fetchUserData(currentUserId); // ✅ refresh data instantly after save
+      fetchUserData(currentUserId);
     },
   });
+
+  const handleReset = async () => {
+    if (!currentUserId) {
+      alert("No user logged in!");
+      return;
+    }
+
+    const confirmReset = window.confirm(
+      "Are you sure you want to reset your income? This will hide current expenses from Add Expense page, but they will still appear in reports."
+    );
+
+    if (confirmReset) {
+      await resetIncome(currentUserId);
+      fetchUserData(currentUserId);
+      alert(
+        "Income reset! Old expenses are now hidden from Add Expense page but remain in reports."
+      );
+    }
+  };
 
   return (
     <div className="flex min-h-screen bg-gray-100">
       <Sidebar />
 
-      {/* Center content, slightly upward */}
       <div className="flex-1 ml-64 flex items-start justify-center pt-24">
         <div className="bg-white p-8 rounded-xl shadow-lg w-full max-w-md">
           <h1 className="text-gray-800 text-3xl font-bold mb-6 text-center">
@@ -107,23 +130,43 @@ export const AddIncome = () => {
 
             <button
               type="submit"
-              className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-3 rounded transition w-full"
+              className="bg-emerald-500 hover:bg-emerald-600 text-white px-6 py-3 rounded transition w-full font-semibold"
             >
               Save Income
             </button>
           </form>
 
-          <div className="mt-6 text-center">
+          <div className="mt-6 text-center border-t pt-6">
             <h2 className="text-gray-800 text-xl font-semibold mb-3">
-              Current Income
+              Income of this month
             </h2>
-            <p className="text-3xl font-bold text-green-600">
+            <p className="text-4xl font-bold text-green-600 mb-2">
               Rs {income?.amount || 0}
             </p>
-            {income && (
-              <p className="text-gray-700 mt-1">
-                Received on: {income.receivedDate || "—"} | Next salary:{" "}
-                {income.nextSalaryDate || "—"}
+            {income && income.amount > 0 && (
+              <>
+                <p className="text-gray-600 text-sm mt-2">
+                  <span className="font-medium">Received on:</span>{" "}
+                  {income.receivedDate || "—"}
+                </p>
+                <p className="text-gray-600 text-sm">
+                  <span className="font-medium">Next salary:</span>{" "}
+                  {income.nextSalaryDate || "—"}
+                </p>
+
+                {/* Reset Button - Only shows when income exists and > 0 */}
+                <button
+                  onClick={handleReset}
+                  className="mt-4 bg-red-500 hover:bg-red-600 text-white px-6 py-2 rounded transition font-semibold shadow-md"
+                >
+                  Reset Income
+                </button>
+              </>
+            )}
+
+            {(!income || income.amount === 0) && (
+              <p className="text-gray-500 text-sm mt-2">
+                No income added yet. Please add your income above.
               </p>
             )}
           </div>
