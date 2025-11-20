@@ -21,6 +21,7 @@ export const Dashboard = () => {
   const { currentUserId, fetchUserData, expenses } = useStore();
 
   // Fetch user data when component loads
+  // state
   useEffect(() => {
     if (currentUserId) fetchUserData(currentUserId);
   }, [currentUserId, fetchUserData]);
