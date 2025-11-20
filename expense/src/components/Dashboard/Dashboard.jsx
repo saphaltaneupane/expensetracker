@@ -17,7 +17,7 @@ import useStore from "../../useStore";
 import { useEffect, useMemo } from "react";
 
 export const Dashboard = () => {
-  // Get data from your store
+  // Get data from your store from state manamegent
   const { currentUserId, fetchUserData, expenses } = useStore();
 
   // Fetch user data when component loads
