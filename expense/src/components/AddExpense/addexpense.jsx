@@ -22,7 +22,7 @@ export const AddExpense = () => {
     }
   }, [fetchUserData, currentUserId]);
 
-  // Use income object safely
+  // Use income object safely and nicely
   const incomeAmount = income?.amount ?? null;
   const incomeStartDate = income?.receivedDate
     ? new Date(income.receivedDate)
