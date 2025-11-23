@@ -191,7 +191,7 @@ export const Landing = () => {
         <span className="text-sm text-gray-400">
           {" "}
           2025 ExpenseEase
-          <p>By Saphalta Neupane Asmt</p>
+          <p className="text-white">By Saphalta Neupane Asmt</p>
         </span>
       </div>
     </div>
