@@ -190,7 +190,8 @@ export const Landing = () => {
       <div className="mt-auto w-full bg-gray-900 border-t border-gray-800 py-6 flex items-center justify-center">
         <span className="text-sm text-gray-400">
           {" "}
-          2025 ExpenseEase By Saphalta Neupane Asmt
+          2025 ExpenseEase
+          <p>By Saphalta Neupane Asmt</p>
         </span>
       </div>
     </div>
