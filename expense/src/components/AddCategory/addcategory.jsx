@@ -80,7 +80,7 @@ export const Addcategory = () => {
             </button>
           </form>
 
-          {/* Display Categories */}
+          {/* Display Categories and adding can be done here  */}
           <div className="mt-6 text-center">
             <h2 className="text-gray-800 text-xl font-semibold mb-3">
               Your Categories
