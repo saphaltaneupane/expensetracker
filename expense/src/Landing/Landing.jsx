@@ -192,6 +192,7 @@ export const Landing = () => {
           {" "}
           2025 ExpenseEase
           <p className="text-white">By Saphalta Neupane Asmt</p>
+          <p>SN</p>
         </span>
       </div>
     </div>
