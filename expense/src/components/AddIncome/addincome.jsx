@@ -5,15 +5,17 @@ import { useFormik } from "formik";
 import * as Yup from "yup";
 
 export const AddIncome = () => {
-  const { income, setIncome, resetIncome, currentUserId, fetchUserData } =
-    useStore();
+  const income = useStore((s) => s.income);
+  const setIncome = useStore((s) => s.setIncome);
+  const currentUserId = useStore((s) => s.currentUserId);
+  const resetIncome = useStore((s) => s.resetIncome);
 
   // Fetch income automatically if logged in (no reloads)
   useEffect(() => {
     if (currentUserId) {
-      fetchUserData(currentUserId); // this gets the user data from firebase
+      // Removed fetchUserData call as requested
     }
-  }, [currentUserId, fetchUserData]);
+  }, [currentUserId]);
 
   const formik = useFormik({
     initialValues: {
@@ -50,7 +52,7 @@ export const AddIncome = () => {
 
       // ✅ The setIncome function now handles clearing reset flags automatically
       resetForm();
-      fetchUserData(currentUserId);
+      // Removed fetchUserData call as requested
     },
   });
 
@@ -66,7 +68,6 @@ export const AddIncome = () => {
 
     if (confirmReset) {
       await resetIncome(currentUserId);
-      fetchUserData(currentUserId);
       alert(
         "Income reset! Old expenses are now hidden from Add Expense page but remain in reports."
       );
