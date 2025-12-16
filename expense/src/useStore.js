@@ -248,10 +248,7 @@ const useStore = create(
     {
       name: "expenseease-store",
       storage: createJSONStorage(() => localStorage),
-      partialize: (state) => ({
-        currentUserId: state.currentUserId,
-        // Don't persist income and categories - always fetch from Firebase
-      }),
+      partialize: () => ({}),
     }
   )
 );
